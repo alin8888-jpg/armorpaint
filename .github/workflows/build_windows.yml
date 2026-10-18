@@ -1,0 +1,37 @@
+ML
+name: Build Windows binary
+ 
+# Manual trigger: Actions tab > "Build Windows binary" > Run workflow
+on:
+  workflow_dispatch:
+ 
+jobs:
+  build:
+    runs-on: windows-latest
+ 
+    steps:
+    - uses: actions/checkout@v4
+ 
+    - name: Compile (same command as the repo's own Windows CI, Release x64)
+      shell: cmd
+      run: |
+        cd paint
+        call ..\base\make.bat --compile
+ 
+    - name: Check the output exists
+      shell: pwsh
+      run: |
+        if (-not (Test-Path paint/build/out/ArmorPaint.exe)) { throw "ArmorPaint.exe was not produced" }
+        Get-ChildItem paint/build/out | Format-Table Name, Length
+ 
+    - name: Package
+      shell: pwsh
+      run: Compress-Archive -Path paint/build/out/* -DestinationPath ArmorPaint_win64.zip
+ 
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: ArmorPaint-win64
+        path: ArmorPaint_win64.zip
+        if-no-files-found: error
+ 
